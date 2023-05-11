@@ -1,0 +1,207 @@
+﻿@page "/"
+
+@using Syncfusion.Blazor.Navigations
+@inject IJSRuntime JSInterop
+
+<PageTitle>A simple To-Do App using Blazor WebAssembly</PageTitle>
+
+<div class="droptarget" ondragstart="DragStart(event,event.target.id);" @ondragover="DragOver"
+     @ondragover:preventDefault="shouldPreventDefault" @ondragenter:preventDefault="shouldPreventDefault"
+     @ondragleave="DragLeave" @ondrop="DropCard" @ondrop:preventDefault="shouldPreventDefault">
+
+    @foreach (var task in Tasks.FindAll(c => c.Status == TaskStatuses.Todo))
+    {
+        <CascadingValue Value="this">
+            <TaskDetail TaskModel="task"></TaskDetail>
+        </CascadingValue>
+    }
+    <br />
+    <SfAccordion>
+        <AccordionItems>
+            <AccordionItem Expanded=true>
+                <HeaderTemplate>
+                    Completed @Tasks.FindAll(c => c.Status == TaskStatuses.Completed).Count
+                </HeaderTemplate>
+                <ContentTemplate>
+                    @foreach (var task in Tasks.FindAll(c => c.Status == TaskStatuses.Completed))
+                    {
+                        <CascadingValue Value="this">
+                            <TaskDetail TaskModel="task"></TaskDetail>
+                        </CascadingValue>
+                    }
+                </ContentTemplate>
+            </AccordionItem>
+        </AccordionItems>
+    </SfAccordion>
+
+</div>
+
+
+@code
+{
+    private bool shouldPreventDefault = true;
+    public static List<TaskModel> Tasks = new List<TaskModel>();
+
+    public void OnTaskStatusChanged(TaskModel task)
+    {
+        Tasks.FirstOrDefault(x => x.Id == task.Id).Status = TaskStatuses.Completed;
+        this.StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitTasks();
+    }
+
+    private void DragOver(System.EventArgs e)
+    {
+    }
+
+    private async Task DragStart(System.EventArgs e, string Id)
+    {
+        await JSInterop.InvokeVoidAsync("DragStart", e, Id);
+    }
+
+    private void DragEnter(System.EventArgs e)
+    {
+    }
+
+    private void DragLeave(System.EventArgs e)
+    {
+    }
+
+    private async Task DropCard(System.EventArgs e)
+    {
+        await JSInterop.InvokeVoidAsync("DropCard", e);
+        await Task.Delay(1500);
+        StateHasChanged();
+    }
+
+    [JSInvokableAttribute("UpdateCards")]
+    public static void UpdateCardsAfterDrop(bool IsCompleted, string dragTarget, string dropTarget)
+    {
+        int dragIndex = Tasks.IndexOf(Tasks.Single(d => d.Id == int.Parse(dragTarget)));
+        int dropIndex = Tasks.IndexOf(Tasks.Single(d => d.Id == int.Parse(dropTarget)));
+
+        if (!IsCompleted)
+        {
+            if (dropIndex != -1)
+            {
+                TaskModel task = Tasks[dragIndex];
+                Tasks.RemoveAt(dragIndex);
+                Tasks.Insert(dropIndex, task);
+            }
+        }
+        else
+        {
+            Tasks[dragIndex].Status = TaskStatuses.Completed;
+        }
+    }
+
+    public void InitTasks()
+    {
+        Tasks.Add(new TaskModel
+            {
+                Id = 1,
+                Summary = "Planning Tasks for sprint",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 09)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 2,
+                Summary = "Defining the product usage",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 08),
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 3,
+                Summary = "Defining the target audience",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 04)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 4,
+                Summary = "Prepare product sketch and notes",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 08)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 5,
+                Summary = "Customer meeting to discuss features",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 08)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 6,
+                Summary = "Knowledge sharing on Vue concepts",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 18)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 7,
+                Summary = "Meeting to discuss customer reported issues.",
+                Status = TaskStatuses.Todo,
+                Timeline = new DateTime(2022, 04, 12)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 8,
+                Summary = "Analysis to implement drag-and-drop a card in Blazor",
+                Status = TaskStatuses.Completed,
+                Timeline = new DateTime(2022, 04, 12)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 9,
+                Summary = "Market opportunity analysis",
+                Status = TaskStatuses.Completed,
+                Timeline = new DateTime(2022, 04, 012)
+            });
+        Tasks.Add(new TaskModel()
+            {
+                Id = 10,
+                Summary = "Competitor analysis",
+                Status = TaskStatuses.Completed,
+                Timeline = new DateTime(2022, 04, 18)
+            });
+    }
+}
+
+<style>
+    .taskitem,
+    .taskstate,
+    .taskcontent {
+        display: flex;
+        position: relative;
+        align-items: stretch;
+    }
+
+    .taskstate {
+        width: 5%;
+        height: 50px;
+        align-items: center;
+    }
+
+    .taskcontent {
+        width: 75%;
+        flex-direction: column;
+    }
+
+    .tasksummary {
+        flex: 1;
+    }
+
+    .tasktimeline {
+        flex: 0;
+    }
+
+    .droptarget {
+        border: 2px dashed lightgreen;
+    }
+</style>
